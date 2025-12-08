@@ -1,0 +1,83 @@
+---
+title: "Coursera_manip-clean"
+author: "Vanessa Ivy"
+date: "2025-12-08"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+#working directory
+setwd("~/Documents/R_programming")
+
+# Packages
+library(tidyverse)
+library(dplyr)
+
+
+```
+
+Essential dplyr functions
+filter(): select specific rows of data based on conditions
+select(): choose the columns you want to review
+arrange(): sort your data rows based on column values
+
+```{r eval=FALSE, include=FALSE}
+# # Example of filter to select sales over $200
+ sales_data <- data.frame(
+   order_id = 1:10,
+   order_date = as.Date("2021-01-01") + 0:9,
+  sales_amount = c(30, 200, 150, 300, 120, 340, 240, 40, 500, 410)
+)
+
+ # Using `filter()`
+ filtered_sales <- sales_data %>% filter(sales_amount > 200)
+
+ print(filtered_sales)
+
+#
+# # Example Dataset `hr_data`
+ hr_data <- data.frame(
+   employee_id = 1:5,
+  name = c("Alice", "Bob", "Charlie", "Diana", "Eve"),
+  job_title = c("Manager", "Analyst", "Developer", "Designer", "Tester"),
+   email = c("alice@example.com", "bob@example.com", "charlie@example.com", "diana@example.com", "eve@example.com")
+ )
+
+# Using `select()`
+contact_list <- hr_data %>% select(name, job_title, email)
+
+print(contact_list)
+
+
+
+
+# Example Dataset `employee_data`
+employee_data <- data.frame(
+  employee_id = 1:4,
+  name = c("Alice", "Bob", "Charlie", "Diana"),
+  salary = c(70000, 55000, 62000, 68000)
+)
+
+# Using `arrange()`
+sorted_employees <- employee_data %>% arrange(desc(salary))
+
+print(sorted_employees)
+
+
+# # First, filter for "South" region:
+# south_sales <- filter(sales_data, region == "South")
+# 
+# # Next, select only the 'amount' column:
+# south_amounts <- select(south_sales, amount)
+# 
+# # Finally, arrange amounts in descending order:
+# south_sales_sorted <- arrange(south_amounts, desc(amount))
+
+```
+
