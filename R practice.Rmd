@@ -1,0 +1,341 @@
+---
+title: 'R practice: Coursera'
+author: "Vanessa Ivy"
+date: "2026-01-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##
+```{r}
+# Ungraded Lab: Sample Project 1
+
+# Install necessary packages (if not already installed)
+# install.packages("tidyverse")  # This line installs the tidyverse package, which includes dplyr and readr.
+
+# Load the tidyverse library
+library(tidyverse)  # This loads the tidyverse package, making its functions available.
+
+# Load the  dataset (Practice_set12_P1.csv) into healthcare_data
+healthcare_data <- read_csv("Practice_set12_P1.csv")  # read_csv() from the readr package reads the CSV file into a data frame.
+
+# Examine the data structure
+str(healthcare_data)  # str() shows the structure of the data frame, including column names and data types. This helps understand the data's organization.
+
+# ================================================
+# Activity 1: Standardize Date and Time Fields (using tidyr, stringr, and dplyr)
+# ================================================
+# First, use tidyr::separate() to split AdmissionDate and DischargeDate columns into parts (day, month, year).
+# Next, use tidyr::unite() to recombine these parts into a standard YYYY-Month-DD format.
+# You might also need to use stringr::str_extract() if certain formats require additional extraction.
+
+# <YOUR CODE HERE>
+
+healthcare_data <- healthcare_data %>%
+separate(AdmissionDate, into = c("AdmDay", "AdmMonth", "AdmYear"), sep = "[/.]", extra = "drop") %>%
+unit(AdmissionDate, AdmYear, AdmMonth, AdmDay, sep = "-", remove = TRUE)
+# remove = T removes the separated columns from the dataset
+
+healthcare_data <- healthcare_data %>%
+separate(DischargeDate, into = c("DisDay", "DisMonth", "DisYear"), sep = "[/.]", extra = "drop") %>%
+unit(DischargeDate, DisYear, DisMonth, DisDay, sep = "-", remove = TRUE)
+
+
+# ================================================
+# Activity 2: Transform Combined Address Fields into Structured Components
+# ================================================
+# Use tidyr::separate() to split PatientAddress into structured columns clearly: Street, City, State, ZIP.
+
+# <YOUR CODE HERE>
+healthcare_data <- healthcare_data %>%
+separate(PatientAddress, into = c("Street", "City", "StateZip"), sep = ",", extra = "merge") %>%
+# handles extra fiedls by merging them into statezip
+separate(StateZip, into= c("State", "ZIP"), sep = "", extra = "merge", fill = "right")
+
+
+# ================================================
+# Activity 3: Clearly Extract Procedure Details from Text Descriptions
+# ================================================
+# Extract ProcedureCode, ProcedureType, and 
+#ProcedureDetail fields clearly from ProcedureDescription using 
+#tidyverse and clearly formulated regex expressions 
+#(stringr::str_extract() or tidyr::extract() with regex)..
+
+# <YOUR CODE HERE>
+healthcare_data <- healthcare_data %>%
+extract(ProcedureDescription, into = c("PrcedureCode", "ProcedureType", "ProcedureDetail"), 
+    regex = "(.*)-(.*)-(.*)", remove = FALSE
+
+# ================================================
+# Activity 4: Creating Calculated Fields to Support Analysis
+# ================================================
+# Compute TotalCharge clearly by multiplying UnitCharge × Quantity of each
+# Procedure.
+
+
+# <YOUR CODE HERE>
+healthcare_data <- healthcare_data %>%
+mutate(
+    TotalCharge = UnitCharge * Quantity
+)
+
+
+
+```
+
+
+```{r}
+
+# Ungraded Lab: Handling Missing Data, Duplicate Entries, and Outliers in Retail Sales Data
+
+# Install necessary packages (if not already installed)
+# install.packages("tidyverse")  # This line installs the tidyverse package, which includes dplyr and readr.
+
+# Load the tidyverse library
+library(tidyverse)  # This loads the tidyverse package, making its functions available.
+
+# Load the retail dataset (Practice_set12_P2.csv)
+retail_data <- read_csv("Practice_set12_P2.csv")  # read_csv() from the readr package reads the CSV file into a data frame.
+
+# Examine the data structure
+str(retail_data)  # str() shows the structure of the data frame, including column names and data types. This helps understand the data's organization.
+
+# ================================================
+# Activity 1: Fill in Missing Values
+# ================================================
+# Calculate median prices per product and use these to fill missing price values.
+
+median_prices <- retail_data %>%
+group_by(ProductDescription) %>%
+summarize (median_price = median(Price, na.rm = TRUE)
+
+# Impute missing price values with median prices
+retail_data <- retail_data %>%
+left_join(median_prices, by = "ProductDescription") %>%
+mutate(Price = ifelse(is.na(Price), median_price , Price)) %>%
+select(-median_price)
+
+# Replace any missing quantities with a default value of 1.
+retail_data$Quantity[is.na(retail_data$Quantity)] <- 1
+
+# ================================================
+# Activity 2: Clean Up Duplicate Records
+# ================================================
+# Identify duplicate orders (same CustomerID, OrderDate, ProductDescription).
+duplicates <- retail_data %>%
+filter(duplicated(select(retail_data, CustomerID, OrderDate, ProductDescription)))
+
+# Remove duplicates with distinct().
+retail_data <- retail_data %>%
+distinct(CustomerID, OrderDate, ProductDescription, .keep_all = TRUE)
+
+# ================================================
+# Activity 3: Adjust Problematic Outliers
+# ================================================
+# Identify your 1st and 99th percentile price points as upper/lower thresholds.
+
+price_thresholds <- quantile(retail_data$Price, probs = c(.01, .99), na.rm = TRUE)
+
+quantity_thresholds <- quantile(retail_data$Quantity, probs = c(.01, .99), na.rm = TRUE)
+
+
+#Adjust Price and Quantity logically based on identified outliers.
+retail_data <- retail_data %>%
+mutate(Price= ifelse(Price < price_thresholds[1], price_thresholds[1], Price),
+Price = ifelse(Price > price_thresholds[2], price_thresholds[2], Price))
+
+retail_data <- retail_data %>%
+mutate(Quantity= ifelse(Quantity < quantity_thresholds[1], quantity_thresholds[1], Quantity),
+Quantity = ifelse(Quantity > quantity_thresholds[2], quantity_thresholds[2], Quantity))
+# ================================================
+# Activity 4: Summarize and Validate Your Improvement
+# ================================================
+# Provide overall descriptive summaries (average, min, max) clearly showing data is analysis-ready.
+# Clearly illustrate the number of orders by products.
+# Create numeric summaries to show Price and Quantity improvements after outlier adjustments.
+
+# <YOUR CODE HERE>
+overall_summary <- retail_data %>%
+summarize(
+    avg_price = mean(Price, na.rm = TRUE)
+    min_price = min(Price, na.rm = TRUE)
+    max_price = max(Price, na.rm = TRUE)
+    avg_quant = mean(Quantity, na.rm = TRUE)
+    min_quant = min(Quantity, na.rm = TRUE)
+    max_quant = max(Quantity, na.rm = TRUE)
+)
+print(overall_summary)
+
+#number of orders by products
+orders_product <- retail_data %>%
+group_by(ProductDescription) %>%
+summarize(order_count = n()
+)
+print(orders_product)
+
+
+price_quantity_summary <- retail_data %>%
+summarize(
+    mean_price = mean(Price, na.rm = TRUE),
+    median_price = median(Price, na.rm = TRUE)
+    mean_quantity = mean(Quantity, na.rm = TRUE)
+    median_quantity = median(Quantity, na.rm = TRUE)
+
+)
+print(price_quantity_summary)
+```
+
+# final project graded
+
+```{r}
+# variables
+# CustomerID, FullName, Address, OrderDate, ProductDescription, Quantity, UnitPrice, Review Rating, ShippingCity, Category
+
+# ================================================
+# Final Project Implemenation
+# ================================================
+
+# ================================================
+# Graded Challenge 1: Handle missing values using specified rules (20 points)
+# ================================================
+
+# Please do not change the variable names in this lab, as this could result in
+# the autograder not registering your code correctly.
+
+# Missing values (20 points)
+# First, import all dependencies and your dataset into a new df called retail_df
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+
+retail_df <- read_csv("retail_set12.csv")
+
+# examine structure
+str(retail_df)
+head(retail_df)
+
+# Next:
+#1. Identify missing values: Use functions like is.na() and sum() to assess the extent of missing data in each 
+#column.
+
+# Check for missing values
+first_missing_values <- sum(is.na(retail_df))
+print(first_missing_values)
+#examine which columns have missing data
+colSums(is.na(retail_df))
+  # missing data in Quantity and UnitPrice columns
+
+#2. Impute missing values: For numerical columns, use the mean or median to replace NAs. 
+#   For categorical columns, use the mode or a placeholder like "Unknown."
+
+# Impute missing 'UnitPrice' with the median
+retail_df$UnitPrice[is.na(retail_df$UnitPrice)] <- median(retail_df$UnitPrice, na.rm = TRUE)
+
+#3. Impute missing values in the UnitPrice with median and Quantity column with the mean.
+
+# Impute missing 'Quantity' with the mean
+retail_df$Quantity[is.na(retail_df$Quantity)] <- mean(retail_df$Quantity, na.rm = TRUE)
+
+# Final Missing Values Check 
+final_missing_values <- sum(is.na(retail_df))
+print(final_missing_values)
+
+
+# ================================================
+# Graded Challenge 2: Customer Analysis
+# (20 points)
+# ================================================
+
+#Duplicates and outliers
+### Graded Challenge 2###
+
+#1. Remove duplicates based on 'CustomerID', 'OrderDate', and 'ProductDescription' columns.
+#2. Check for duplicates.
+#3. Treat outliers: For the purposes of this lab, treat values outside 1.5 times the interquartile range as outliers and remove the corresponding rows. 
+
+#1. Remove duplicates based on 'CustomerID', 'OrderDate', and 'ProductDescription' columns.
+retail_df <- retail_df %>%
+  distinct(CustomerID, OrderDate, ProductDescription, .keep_all = TRUE)
+
+#2. Check for duplicates.
+duplicates <- retail_df[duplicated(retail_df), ]
+print(duplicates)
+
+#3. Treat outliers: For the purposes of this lab, treat values outside 1.5 times the interquartile range 
+# as outliers and remove the corresponding rows. The solutions file will show two approaches for doing this.
+
+#Check before removing outliers
+print(summary(retail_df))
+
+# Identify and Remove Outliers using filter() for UnitPrice (<= 1000) and Quantity (<=2)
+clean_retail_df <- retail_df %>%
+  filter(UnitPrice <= 1000, Quantity <= 2)
+
+# View cleaned data
+head(clean_retail_df)
+print(summary(clean_retail_df))
+
+
+# ================================================
+# Graded Challenge 3: Standardize Date/Time Formats (20 points)
+# ================================================
+
+# Use str_replace_all to expand street abbreviations
+
+#1. Replace "Ln" with "Lane" in the Address column
+
+retail_df <- retail_df %>%
+  mutate( Address = str_replace_all(Address, "Ln", "Lane") )
+
+#2. Replace "Blvd" with "Boulevard" in the Address column
+retail_df <- retail_df %>%
+  mutate(  Address = str_replace_all(Address, "Blvd", "Boulevard") )
+
+
+# ================================================
+# Graded Challenge 4: Transform combined fields into structured components (20 points)
+# ================================================
+
+#1 Separate the 'Address' column into 'StreetNumber','StreetName','StreetType', 'City', 'State', and 'Zip'
+# Separate the address components
+retail_df <- retail_df %>%
+    separate(Address, into = c("StreetNumber", "StreetName", "StreetType", "City", "State", "Zip"),
+    sep = " ", extra = "merge")
+
+#2.Split the FullName column into FirstName and LastName using a space as the separator,
+# taking into account edge cases with middle names.
+
+# Separate the name components
+retail_df <- retail_df %>%
+    separate(FullName, into = c("FirstName", "LastName"),
+    #account for potential middle name by merging extra parts into LastName
+    sep = " ", extra = "merge")
+
+print(retail_df)
+
+# ================================================
+# Graded Challenge 5: Create required calculated fields (20 points)
+# ================================================
+
+#1.Create the Total Revenue field.
+## Calculate 'TotalRevenue'
+retail_df <- retail_df %>%
+    mutate(TotalRevenue = Quantity * UnitPrice )
+     # YOUR CODE HERE - please use the field name TotalRevenue exactly and do not change it.
+
+# View the updated dataframe
+head(retail_df)
+str(retail_df)
+
+#2.Create a EuroPrice field calculating the UnitPrice in Euros (1 USD = 0.92 EUR).
+## Add a column for UnitPrice in Euros. Call it EuroPrice (assuming 1 USD = 0.92 EUR)
+
+retail_df <- retail_df %>%
+  mutate(EuroPrice = UnitPrice* .92)  # YOUR CODE HERE - please use the field name EuroPrice exactly and do not change it.
+summary(retail_df$EuroPrice)
+```
+
